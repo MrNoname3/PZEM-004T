@@ -18,7 +18,11 @@ SoftwareSerial swSerial[POWER_METER_MAX_NUM];
 PZEM004Tv30 pzem[POWER_METER_MAX_NUM];
 PZEM_data pzem_data[POWER_METER_MAX_NUM];
 
+#ifdef USE_SSL
 WiFiClientSecure tcp_client;
+#else
+WiFiClient tcp_client;
+#endif
 PubSubClient mqtt(tcp_client);
 Ticker ticker;
 
@@ -91,7 +95,9 @@ void setup() {
 
   setClock();
   DNS_Resolv(host);
+  #ifdef USE_SSL
   tcp_client.setCACert(CACertificate);
+  #endif
   tcp_client.setTimeout(10000);
 
   Serial.printf("[%lu] Connecting to server ", millis());
@@ -118,7 +124,7 @@ void setup() {
 
   char system_info_json[320] = { '\0' };
 
-  sprintf(system_info_json, json_variables, 
+  sprintf(system_info_json, init_log_json_frame, 
     WiFi.localIP().toString().c_str(),
     WiFi.gatewayIP().toString().c_str(),
     WiFi.subnetMask().toString().c_str(),
