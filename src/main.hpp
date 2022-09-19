@@ -51,8 +51,8 @@ const char measures_json_frame[] = {                  /// This is a JSON frame f
 struct PZEM_data {                                    /// This structure stores data readed from PZEM power meter.
   uint8_t sn;                                         /// Sensor number.
   uint8_t error = 0;                                  /// Reading error codes.
-  bool isdead = false;                                /// It stores whether the sensor is alive or dead.
-  uint8_t isdead_cntr = 0;                            /// Counter for dead times.
+  bool isdown = false;                                /// It stores whether the sensor is alive or down.
+  uint8_t isdown_cntr = 0;                            /// Counter for down times.
   uint8_t address;                                    /// Sensor address.
   float voltage;                                      /// Measured voltage in [V].
   float current;                                      /// Measured current in [A].
