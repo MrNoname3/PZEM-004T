@@ -308,6 +308,7 @@ void mqttTask( void *pvParameters ) {
   vTaskDelete( NULL );                // Deletes the task if the processing somehow reaches this line.
 }
 
+//************* Function section. *************//
 void ConnectionStatus( void ) {
   const uint16_t checking_time = 100;                               // Time value for a timer.
   static uint32_t checking_timer = 0;                               // Timer variable to check the connection.
