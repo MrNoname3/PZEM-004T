@@ -2,12 +2,12 @@
 This project was designed to read 1-3 __PZEM-004T 100A V3.0__ power meters with ESP32 microcontroller and send the measured data to a Mosquitto MQTT server.
 
 ## __SSL setup:__
-SSL encrypted communication with the MQTT server is enabled by default. For encryption, you must specify the server certificate in the ___secrets.hpp___ file. If you don't need SSL, comment out or delete the line marked ___-D USE_SSL___ under ___build_flags___ in ___platformio.ini___ file:
+SSL encrypted communication with the MQTT server is __enabled by default!__ For encryption, you must specify the server certificate in the ___secrets.hpp___ file. If you don't need SSL, comment out or delete the line marked ___-D USE_SSL___ under ___build_flags___ in ___platformio.ini___ file:
 ```
 build_flags =     
     -DCORE_DEBUG_LEVEL=1                ; Debug level -> 0:none, 1:error, 2:warn, 3:info, 4:debug, 5:verbose
     -D PZEM004_SOFTSERIAL               ; Enable software serial in PZEM004 driver class.
-    -D USE_SSL                          ; Enable SSL communication. (Certification required!)
+    -D USE_SSL                          ; Enable SSL communication. (Certificate required!)
 ```
 
 ## __MQTT setup:__
@@ -31,7 +31,7 @@ const char mqtt_base_topic[] PROGMEM = "powermeter";                    // Base 
 const char mqtt_pub_log[] PROGMEM    = "log";                           // Topic for logging: "powermeter/macaddress/log".
 const char mqtt_pub_power[] PROGMEM  = "power";                         // Topic for power data: "powermeter/macaddress/power".
 
-                                                                        // Certification for SSL communication.
+                                                                        // Certificate for SSL communication.
 const char CACertificate[] PROGMEM = \
 "-----BEGIN CERTIFICATE-----\n" \
 "first line of your certificate\n" \
@@ -43,3 +43,51 @@ const char CACertificate[] PROGMEM = \
 
 #endif
 ```
+
+## __Sensor and pin setup:__
+
+This section is at the beginning of the ___main.cpp___ file. 
+
+```cpp
+#define LED                   2                                 // Pin number of the status LED.
+#define WIFI_RST_BTN          4                                 // Pin number of the Wifi credentials reset button.
+#define POWER_METER_RST_BTN   5                                 // Pin number of the energy value reset button.
+```
+You can configure the pins for ___LED___, ___WIFI_RST_BTN___ and ___POWER_METER_RST_BTN___. 
+* ___LED:___ Status LED output pin. Flashes during ___setup()___. If everything is OK, it will turn off after the ___setup()___ phase.
+* ___WIFI_RST_BTN:___ Input pin. If this pin is pulled low during ___setup()___, it will clear the saved Wifi credentials and Wifimanager will start in AP mode to configure a new Wifi connection.
+* ___POWER_METER_RST_BTN:___ Input pin. If this pin is pulled low during the ___setup()___ phase, it clears the stored energy value of the power sensors.
+
+```cpp
+#define POWER_METER_NUM       3                                 // Define the maximum number of power meter devices.
+const uint8_t rxPins[POWER_METER_NUM] = { 16, 18, 22 };         // Power meters software serial RX pins.
+const uint8_t txPins[POWER_METER_NUM] = { 17, 19, 23 };         // Power meters software serial TX pins.
+```
+The number of power meters should be entered in the ___POWER_METER_NUM___ field. You must then specify the RX and TX pins of the sensors in the ___rxPins___ and ___txPins___ arrays. In this example, pin 16/17 is the RX/TX pin of sensor 0, pin 18/19 is the RX/TX pin of sensor 1, and so on.
+
+```cpp
+#define MEASURE_TIME          10000                             // Measure time of the power meters in ms.
+```
+You can define the measurement time of the sensors in _ms_ using ___MEASURE_TIME___.
+
+```cpp
+#define TOPIC_NAME_SIZE       50                                // MQTT topics name sizes.
+```
+
+```cpp
+char mqtt_client_name[TOPIC_NAME_SIZE] = { '\0' };              // Storing the MQTT client name.
+char mqtt_log[TOPIC_NAME_SIZE] = { '\0' };                      // Storing the name of the MQTT logging topic.
+char mqtt_power[TOPIC_NAME_SIZE] = { '\0' };                    // Storing the name of the MQTT power data topic.
+```
+Use ___TOPIC_NAME_SIZE___ to specify the size of the MQTT topic strings, which are filled in the ___setup()___ section:
+
+```cpp
+// The MQTT topics used by devices include the MAC address of the devices
+// to distinguish between devices with the same firmware.
+sprintf(mqtt_client_name, "%s_%s", mqtt_client, MAC_Address);                   // Example: "PowerMeter_macaddress"
+sprintf(mqtt_log, "%s/%s/%s", mqtt_base_topic, MAC_Address, mqtt_pub_log);      // Example: "powermeter/macaddress/log"
+sprintf(mqtt_power, "%s/%s/%s", mqtt_base_topic, MAC_Address, mqtt_pub_power);  // Example: "powermeter/macaddress/power"
+```
+
+
+

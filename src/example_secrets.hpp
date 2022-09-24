@@ -16,7 +16,7 @@ const char mqtt_base_topic[] PROGMEM = "powermeter";                    // Base 
 const char mqtt_pub_log[] PROGMEM    = "log";                           // Topic for logging: "powermeter/macaddress/log".
 const char mqtt_pub_power[] PROGMEM  = "power";                         // Topic for power data: "powermeter/macaddress/power".
 
-                                                                        // Certification for SSL communication.
+                                                                        // Certificate for SSL communication.
 const char CACertificate[] PROGMEM = \
 "-----BEGIN CERTIFICATE-----\n" \
 "first line of your certificate\n" \

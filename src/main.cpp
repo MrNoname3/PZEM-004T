@@ -1,24 +1,25 @@
 #include "main.hpp"
 
 //************* Constants *************//
-const char sw_ver[] = "V0.0.1";                                 // Software version number.
-const uint8_t LED = 2;                                          // Pin number of the status LED.
-const uint8_t WiFiRstBtn = 4;                                   // Pin number of the Wifi credentials reset button.
-const uint8_t PowerMeterRstBtn = 5;                             // Pin number of the energy value reset button.
-const uint8_t rxPins[POWER_METER_MAX_NUM] = { 16, 18, 22 };     // Power meters software serial RX pins.
-const uint8_t txPins[POWER_METER_MAX_NUM] = { 17, 19, 23 };     // Power meters software serial TX pins.
-const uint16_t measure_time = 10000;                            // Measure time of the power meters in ms.
-const uint8_t topic_name_size = 50;                             // MQTT topics name sizes.
+#define SW_VERSION            "V0.0.1"                          // Software version number.
+#define LED                   2                                 // Pin number of the status LED.
+#define WIFI_RST_BTN          4                                 // Pin number of the Wifi credentials reset button.
+#define POWER_METER_RST_BTN   5                                 // Pin number of the energy value reset button.
+#define POWER_METER_NUM       3                                 // Define the maximum number of power meter devices.
+const uint8_t rxPins[POWER_METER_NUM] = { 16, 18, 22 };         // Power meters software serial RX pins.
+const uint8_t txPins[POWER_METER_NUM] = { 17, 19, 23 };         // Power meters software serial TX pins.
+#define MEASURE_TIME          10000                             // Measure time of the power meters in ms.
+#define TOPIC_NAME_SIZE       50                                // MQTT topics name sizes.
 
 //************* MQTT string variables. *************//
-char mqtt_client_name[topic_name_size] = { '\0' };              // Variable storing the MQTT client name.
-char mqtt_log[topic_name_size] = { '\0' };                      // Variable storing the name of the MQTT logging topic.
-char mqtt_power[topic_name_size] = { '\0' };                    // Variable storing the name of the MQTT power data topic.
+char mqtt_client_name[TOPIC_NAME_SIZE] = { '\0' };              // Storing the MQTT client name.
+char mqtt_log[TOPIC_NAME_SIZE] = { '\0' };                      // Storing the name of the MQTT logging topic.
+char mqtt_power[TOPIC_NAME_SIZE] = { '\0' };                    // Storing the name of the MQTT power data topic.
 
 //************* Objects and structures. *************//
-SoftwareSerial swSerial[POWER_METER_MAX_NUM];                   // Software serial objects for the power meters.
-PZEM004Tv30 pzem[POWER_METER_MAX_NUM];                          // Driver objects for power meters.
-PZEM_data pzem_data[POWER_METER_MAX_NUM];                       // Measurement data structures for power meters.
+SoftwareSerial swSerial[POWER_METER_NUM];                       // Software serial objects for the power meters.
+PZEM004Tv30 pzem[POWER_METER_NUM];                              // Driver objects for power meters.
+PZEM_data pzem_data[POWER_METER_NUM];                           // Measurement data structures for power meters.
 
 #ifdef USE_SSL                                                  // Choose between encrypted and unencrypted TCP connection.
 WiFiClientSecure tcp_client;                                    // Object of encrypted TCP connection.
@@ -42,38 +43,38 @@ const byte mqttQueueSize = 3;                                   // Queue size.
 void setup() {  
   Serial.begin(115200);                                                         // Init the debug serial port.
 
-  for( uint8_t i = 0; i < POWER_METER_MAX_NUM; i++ ) {                          // Setup sensors.
+  for( uint8_t i = 0; i < POWER_METER_NUM; i++ ) {                              // Setup sensors.
     pzem[i] = PZEM004Tv30( swSerial[i] );                                       // Power meters setup.
     swSerial[i].begin( PZEM_BAUD_RATE, SWSERIAL_8N1, rxPins[i], txPins[i] );    // Software serial ports setup.
     pzem_data[i].sn = i;                                                        // Gives a number for the sensors.
   }
 
-  pinMode(LED, OUTPUT);                                               // Sets LED pin as output.
-  pinMode(WiFiRstBtn, INPUT_PULLUP);                                  // Sets Wifi credentials reset button as input pullup.
-  pinMode(PowerMeterRstBtn, INPUT_PULLUP);                            // Sets energy reset button as a pullup input.
-  Serial.println("\r\n***************************************");      // Debug prints.
+  pinMode(LED, OUTPUT);                                                 // Sets LED pin as output.
+  pinMode(WIFI_RST_BTN, INPUT_PULLUP);                                  // Sets Wifi credentials reset button as input pullup.
+  pinMode(POWER_METER_RST_BTN, INPUT_PULLUP);                           // Sets energy reset button as a pullup input.
+  Serial.println("\r\n***************************************");        // Debug prints.
   Serial.printf("[%lu] Setup starting...\r\n", millis());                                               
-  Serial.printf("[%lu] Software version: %s\r\n", millis(), sw_ver);
-  ticker.attach(0.2, tick);                                           // Toggle LED with 200ms time.
+  Serial.printf("[%lu] Software version: %s\r\n", millis(), SW_VERSION);
+  ticker.attach(0.2, tick);                                             // Toggle LED with 200ms time.
 
-  if( digitalRead(PowerMeterRstBtn) == LOW ) {                        // If energy reset button is active...
+  if( digitalRead(POWER_METER_RST_BTN) == LOW ) {                       // If energy reset button is active...
     Serial.println("Resetting energy meters!");
-    for( uint8_t i = 0; i < POWER_METER_MAX_NUM; i++ ) {
-      pzem[i].resetEnergy();                                          // Reset total energy stored by power meters.
+    for( uint8_t i = 0; i < POWER_METER_NUM; i++ ) {
+      pzem[i].resetEnergy();                                            // Reset total energy stored by power meters.
       delay(50);
     }
   }
 
-  WifiConnect();                                                      // Call function for Wifi connection.
+  WifiConnect();                                                        // Call function for Wifi connection.
 
   Serial.printf("[%lu] Connecting to router", millis());
   uint8_t timeout = 0;
-  while ( WiFi.localIP() == IPAddress( 0, 0, 0, 0 ) ) {               // Wait until the device receives an IP address.
+  while ( WiFi.localIP() == IPAddress( 0, 0, 0, 0 ) ) {                 // Wait until the device receives an IP address.
     Serial.print(".");
     delay(100);
     timeout++;
-    if (timeout >= 100) {                                             // If the device does not receive an IP address 
-      timeout = 0;                                                    // by the specified time, it restarts the ESP.
+    if (timeout >= 100) {                                               // If the device does not receive an IP address 
+      timeout = 0;                                                      // by the specified time, it restarts the ESP.
       Serial.printf(" %s\r\n", ERROR_state); 
       RestartESP();
       break;
@@ -81,8 +82,8 @@ void setup() {
   }
   Serial.printf(" %s\r\n", OK_state);
 
-  uint8_t mac[6];                                                     // Store the MAC address of the device
-  WiFi.macAddress(mac);                                               // in the specified format.
+  uint8_t mac[6];                                                       // Store the MAC address of the device
+  WiFi.macAddress(mac);                                                 // in the specified format.
   sprintf(MAC_Address, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]); 
 
   // The MQTT topics used by devices include the MAC address of the devices
@@ -133,7 +134,7 @@ void setup() {
     WiFi.gatewayIP().toString().c_str(),
     WiFi.subnetMask().toString().c_str(),
     MAC_Address,
-    sw_ver,
+    SW_VERSION,
     getClock()
   );
 
@@ -169,17 +170,17 @@ void loop() {
 
   static uint32_t measure_timer = millis();                         // Timer variable for timing measurements.
 
-  if( millis() - measure_timer >= measure_time ) {                  // Timer check.
+  if( millis() - measure_timer >= MEASURE_TIME ) {                  // Timer check.
     measure_timer = millis();                                       // Timer reload.
 
     bool isalldown = true;                                          // Variable for checking the status of power sensors.
 
-    for( uint8_t i = 0; i < POWER_METER_MAX_NUM; i++ ) {            // Check all power sensors.
+    for( uint8_t i = 0; i < POWER_METER_NUM; i++ ) {                // Check all power sensors.
 
       isalldown &= pzem_data[i].isdown;                             // Health check.
 
       // If the last sensor is down too, it restarts the ESP.
-      if( ( i == (POWER_METER_MAX_NUM - 1) ) && ( isalldown == true ) ) {
+      if( ( i == (POWER_METER_NUM - 1) ) && ( isalldown == true ) ) {
         Serial.printf( "[%lu] All sensor is down!\r\n", millis() );
         RestartESP();
       }
@@ -345,7 +346,7 @@ void WifiConnect(void) {
   WiFiManager wm;                                                   // Local WiFiManager object.
 
   // If you press this button on startup, the Wifi credentials will be removed.
-  if( digitalRead(WiFiRstBtn) == LOW)  {    
+  if( digitalRead(WIFI_RST_BTN) == LOW)  {    
     wm.resetSettings();                                             // Clear the saved Wifi credentials.
     Serial.println("Wifi credentials cleared!");                    // Debug.
   }

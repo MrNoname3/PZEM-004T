@@ -14,14 +14,11 @@
 #include <Ticker.h>                   /// Ticker for LED status.
 #include <WiFiManager.h>              /// Intelligent WiFi connection manager.
 
-#define POWER_METER_MAX_NUM 3                         /// Define the maximum number of power meter devices.
-
 #define LED_H digitalWrite( LED, HIGH )               /// Status LED ON state.
 #define LED_L digitalWrite( LED, LOW )                /// Status LED OFF state.
 #define LED_T digitalWrite( LED, !digitalRead(LED) )  /// LED Toggle state.
 
-const uint8_t mac_size = 18;                          /// MAC address size.
-char MAC_Address[mac_size] = { '\0' };                /// Variable to store the formatted MAC address string.
+char MAC_Address[18] = { '\0' };                      /// Variable to store the formatted MAC address string.
 const char OK_state[] = "[ OK ]";                     /// OK state string for serial debugging.
 const char ERROR_state[] = "[ ERROR ]";               /// ERROR state string for serial debugging.
 
