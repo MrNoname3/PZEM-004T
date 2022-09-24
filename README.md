@@ -88,6 +88,11 @@ sprintf(mqtt_client_name, "%s_%s", mqtt_client, MAC_Address);                   
 sprintf(mqtt_log, "%s/%s/%s", mqtt_base_topic, MAC_Address, mqtt_pub_log);      // Example: "powermeter/macaddress/log"
 sprintf(mqtt_power, "%s/%s/%s", mqtt_base_topic, MAC_Address, mqtt_pub_power);  // Example: "powermeter/macaddress/power"
 ```
+## __Donation__
+If this project has helped reduce development time and you would like to donate, you can do so here:
 
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?hosted_button_id=H9U2Y9SHNY6MQ)
 
+## __License__
+Licensed under the [MIT License](LICENSE).
 
