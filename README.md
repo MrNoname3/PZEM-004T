@@ -88,6 +88,12 @@ sprintf(mqtt_client_name, "%s_%s", mqtt_client, MAC_Address);                   
 sprintf(mqtt_log, "%s/%s/%s", mqtt_base_topic, MAC_Address, mqtt_pub_log);      // Example: "powermeter/macaddress/log"
 sprintf(mqtt_power, "%s/%s/%s", mqtt_base_topic, MAC_Address, mqtt_pub_power);  // Example: "powermeter/macaddress/power"
 ```
+## __Used libraries:__
+* [PubSubClient](https://github.com/knolleary/pubsubclient/)
+* [PZEM-004T-v30](https://github.com/mandulaj/PZEM-004T-v30)
+* [EspSoftwareSerial](https://github.com/plerup/espsoftwareserial)
+* [WiFiManager](https://github.com/tzapu/WiFiManager.git)
+
 ## __Donation__
 If this project has helped reduce development time and you would like to donate, you can do so here:
 
