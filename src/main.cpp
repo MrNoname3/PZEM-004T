@@ -397,7 +397,7 @@ void configModeCallback(WiFiManager *myWiFiManager) {
 
 void setClock(void) {  
   // Set the time required for x.509 validation via NTP.
-  configTime(2 * 3600, 0, "0.hu.pool.ntp.org", "1.hu.pool.ntp.org", "2.hu.pool.ntp.org");
+  configTime( 0, 3600, "pool.ntp.org" );
 
   Serial.printf("[%lu] Waiting for NTP time sync", millis());
   time_t nowSecs = time(nullptr);                                   // Create date-time structure.
