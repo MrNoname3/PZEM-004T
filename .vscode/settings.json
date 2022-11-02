@@ -3,6 +3,7 @@
         "numeric": "cpp",
         "cmath": "cpp",
         "*.tcc": "cpp",
-        "cstdio": "cpp"
+        "cstdio": "cpp",
+        "limits": "cpp"
     }
 }

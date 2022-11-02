@@ -21,12 +21,10 @@ SoftwareSerial swSerial[POWER_METER_NUM];                       // Software seri
 PZEM004Tv30 pzem[POWER_METER_NUM];                              // Driver objects for power meters.
 PZEM_data pzem_data[POWER_METER_NUM];                           // Measurement data structures for power meters.
 
-#ifdef USE_SSL                                                  // Choose between encrypted and unencrypted TCP connection.
-WiFiClientSecure tcp_client;                                    // Object of encrypted TCP connection.
-#else
-WiFiClient tcp_client;                                          // Object of unencrypted TCP connection.
-#endif
-PubSubClient mqtt(tcp_client);                                  // Object of MQTT client.
+WiFiClientSecure tcp_client_ssl;                                // Object of encrypted TCP connection.
+WiFiClient tcp_client_nossl;                                    // Object of unencrypted TCP connection.
+Client* tcp_client;                                             // TCP client object pointer.
+PubSubClient mqtt;                                              // Object of MQTT client.
 Ticker ticker;                                                  // Object of the timer interrupt handler.
 
 WebServer httpServer(28080);                                    // Object of the HTTP server.
@@ -98,15 +96,27 @@ void setup() {
   Serial.printf(" NM: %s\r\n", WiFi.subnetMask().toString().c_str());
   Serial.printf(" MAC: %s\r\n", MAC_Address);
 
+  if( strlen(CACertificate) > 0 ) {                                         // Decide of encryption at runtime.
+    tcp_client_ssl.setCACert(CACertificate);                                // Set up a certificate for SSL connection.
+    tcp_client = &tcp_client_ssl;                                           // Store WiFiClientSecure object's ponter.
+    tcp_client_nossl.~WiFiClient();                                         // Destruct WiFiClient object.
+    Serial.println("Using encrypted connection!");                          // Print used TCP connection type.
+  }
+  else {
+    tcp_client = &tcp_client_nossl;                                         // Store WiFiClient object's ponter.
+    tcp_client_ssl.~WiFiClientSecure();                                     // Destruct WiFiClientSecure object.
+    Serial.println("Using unencrypted connection!");                        // Print used TCP connection type.
+  }
+
+  Serial.printf("Server: %s:%hu\r\n", mqtt_server, mqtt_port);              // Print the server URL and port.
+  mqtt.setClient(*tcp_client);                                              // Set the TCP client for MQTT object.
+  tcp_client->setTimeout(10);                                               // Setting the TCP connection timeout.
+
   setClock();                                                               // Call the time synchronisation function.
-  DNS_Resolv(host);                                                         // Call function for DNS resolvation.
-  #ifdef USE_SSL
-  tcp_client.setCACert(CACertificate);                                      // Set up a certificate for SSL connection.
-  #endif
-  tcp_client.setTimeout(10);                                                // Setting the TCP connection timeout.      
+  DNS_Resolv(mqtt_server);                                                  // Call function for DNS resolvation.
 
   Serial.printf("[%lu] Connecting to server ", millis());                   // Establishing a TCP connection with the server.
-  if ( tcp_client.connect(host, mqtt_port) == true ) {
+  if ( tcp_client->connect(mqtt_server, mqtt_port) == true ) {
     Serial.println(OK_state);
   }
   else {
@@ -295,7 +305,7 @@ void mqttTask( void *pvParameters ) {
     if( millis() - dns_timer >= 6 * 60 * 60 * 1000 ) {              // Timer check.
       dns_timer = millis();                                         // Timer reload.
       yield();                                                      // Maintaining network hardware.
-      DNS_Resolv(host);                                             // Call function for DNS resolvation.
+      DNS_Resolv(mqtt_server);                                      // Call function for DNS resolvation.
     }
 
     yield();                                                        // Maintaining network hardware.
