@@ -21,10 +21,9 @@ SoftwareSerial swSerial[POWER_METER_NUM];                       // Software seri
 PZEM004Tv30 pzem[POWER_METER_NUM];                              // Driver objects for power meters.
 PZEM_data pzem_data[POWER_METER_NUM];                           // Measurement data structures for power meters.
 
-volatile uint16_t certSize;
+volatile uint16_t certSize;										                  // Store the size of the certification.
 Client* tcp_client;                                             // TCP client object pointer.
 const uint16_t* server_port;                                    // Pointer to server port number.
-const char* server_url;                                         // Pointer to server URL.
 PubSubClient mqtt;                                              // Object of MQTT client.
 Ticker ticker;                                                  // Object of the timer interrupt handler.
 
@@ -101,7 +100,6 @@ void setup() {
 
   if( certSize > 0 ) {                                                      // Decide of encryption at runtime.
     server_port = &mqtt_port_ssl;                                           // Get server port number.
-    server_url = mqtt_server_ssl;                                           // Get server URL.
     WiFiClientSecure* tcp_client_ssl = new WiFiClientSecure;                // Create WiFiClientSecure object at runtime.
     tcp_client_ssl->setCACert(CACertificate);                               // Set up a certificate for SSL connection.
     tcp_client = tcp_client_ssl;                                            // Store WiFiClientSecure object's ponter.
@@ -109,20 +107,19 @@ void setup() {
   }
   else {
     server_port = &mqtt_port;
-    server_url = mqtt_server;
     tcp_client = new WiFiClient;                                            // Create WiFiClient object at runtime.
     Serial.println("Using unencrypted connection!");                        // Print used TCP connection type.
   }
 
-  Serial.printf("Server: %s:%hu\r\n", server_url, *server_port);            // Print the server URL and port.
+  Serial.printf("Server: %s:%hu\r\n", mqtt_server, *server_port);           // Print the server URL and port.
   mqtt.setClient(*tcp_client);                                              // Set the TCP client for MQTT object.
   tcp_client->setTimeout(10);                                               // Setting the TCP connection timeout.
 
   setClock();                                                               // Call the time synchronisation function.
-  DNS_Resolv(server_url);                                                   // Call function for DNS resolvation.
+  DNS_Resolv(mqtt_server);                                                  // Call function for DNS resolvation.
 
   Serial.printf("[%lu] Connecting to server ", millis());                   // Establishing a TCP connection with the server.
-  if ( tcp_client->connect(server_url, *server_port) == true ) {
+  if ( tcp_client->connect(mqtt_server, *server_port) == true ) {
     Serial.println(OK_state);
   }
   else {
@@ -296,7 +293,7 @@ void mqttTask( void *pvParameters ) {
       }
 
       // Debug prints.
-      Serial.printf( "[%lu] JSON data: %s\r\n", millis(), measures_json_string );     
+      Serial.printf( "[%lu] JSON data: %s\r\n", millis(), measures_json_string );
 
     }  // End of the if statement.
 
@@ -311,7 +308,7 @@ void mqttTask( void *pvParameters ) {
     if( millis() - dns_timer >= 6 * 60 * 60 * 1000 ) {              // Timer check.
       dns_timer = millis();                                         // Timer reload.
       yield();                                                      // Maintaining network hardware.
-      DNS_Resolv(server_url);                                       // Call function for DNS resolvation.
+      DNS_Resolv(mqtt_server);                                      // Call function for DNS resolvation.
     }
 
     yield();                                                        // Maintaining network hardware.
